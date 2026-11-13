@@ -1,0 +1,23 @@
+id,label,value
+attendees_2025,Attendees 2025,277
+attendees_2026,Attendees 2026,410
+attendees_change,Attendee change %,48.0
+registrations_2026,Registrations 2026,829
+registrations_change,Registration change %,14.3
+conversion_2026,Registration-to-attendance % 2026,49.5
+conversion_change,Conversion change (pp),11.3
+sessions_2026,Workshop sessions 2026,48
+sessions_change,Session change %,55
+satisfaction,Overall satisfaction %,98.9
+nps_2025,NPS 2025,81
+nps_2026,NPS 2026,77
+responses,Survey responses,261
+response_rate,Survey response rate %,63.7
+present_interest_n,Respondents interested in presenting,225
+waitlist_entries,HCMC waitlist entries,60
+waitlist_weeks_2026,Weeks to HCMC capacity 2026,2.5
+open_weeks_2025,Weeks of open registration 2025,7
+external_share_2025,External presenter share 2025 %,21
+external_share_2026,External presenter share 2026 %,60
+web_sepoct_share,Share of page views in Sep-Oct %,81
+web_peak_views,Peak daily page views (10 Oct),633

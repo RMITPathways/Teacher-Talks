@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teacher Talks 2026 — Results at a Glance</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+/* ===== Theme: change colours and fonts here ===== */
+:root{
+  --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-anthropic-serif: Georgia, "Times New Roman", serif;
+  --color-fg:#1f1f1f; --color-fg-muted:#6b6b6b; --color-bg:#ffffff; --page-bg:#f6f5f2;
+  --color-panel:#ffffff; --color-border-line:#e5e3dd;
+  --color-ok:#2e7d32; --color-warn:#b26a00; --color-bad:#c62828;
+  --cds-font-size-caption:12px; --cds-font-size-body:14px; --cds-font-size-heading:19px; --cds-font-size-title:32px;
+  --cds-font-weight-medium:600;
+  --cds-gap-xs:4px; --cds-gap-sm:8px; --cds-gap-md:12px; --cds-gap-lg:16px; --cds-gap-xl:32px;
+  --cds-pad-lg:16px; --cds-radius:10px;
+  --cds-chart-muted:#c9c7c0; --cds-chart-grid:#ecebe6; --cds-chart-axis:#c9c7c0; --cds-chart-reference:#9a988f;
+  --cds-text-secondary:#6b6b6b; --cds-surface-popover:#ffffff; --cds-border:#e5e3dd; --cds-shadow-popover:0 4px 12px rgba(0,0,0,.12);
+  --chart-1:#2f6fdb; --chart-2:#e0803a; --chart-3:#3aa889; --chart-4:#a35cc8; --chart-5:#d9534f;
+}
+body{margin:0;background:var(--page-bg)}
+#dash-root{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
+.dash-skeleton{background:var(--cds-chart-grid);border-radius:4px;color:transparent !important}
+.tt-chart.dash-skeleton{min-height:120px}
+/* ===== Dashboard styles ===== */
+.tt{font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-xl)}
+.tt h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.tt-sub{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin:4px 0 0}
+.tt h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0 0 var(--cds-gap-md)}
+.tt h3{font-size:var(--cds-font-size-body);font-weight:var(--cds-font-weight-medium);margin:0 0 var(--cds-gap-sm)}
+.tt h4{font-size:var(--cds-font-size-caption);font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);margin:var(--cds-gap-md) 0 var(--cds-gap-xs)}
+.tt-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--cds-gap-md)}
+.tt-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:var(--cds-gap-md);margin-bottom:var(--cds-gap-md)}
+.tt-wide{grid-column:1/-1}
+.tt-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);min-width:0}
+.tt-num{font-family:var(--font-anthropic-serif);font-weight:400;font-size:2rem;line-height:1.15;font-variant-numeric:tabular-nums}
+.tt-mini .tt-num{font-size:1.4rem}
+.tt-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:var(--cds-gap-md);margin-bottom:var(--cds-gap-md)}
+.tt-lbl{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.tt-up,.tt-down,.tt-ctx{font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.tt-up{color:var(--color-ok)}.tt-down{color:var(--color-warn)}.tt-ctx{color:var(--color-fg-muted)}
+.tt-chart{position:relative;min-height:60px}
+.tt-chart svg{display:block;overflow:visible}
+.tt-chart text{font-family:var(--font-anthropic-sans);font-size:11px;fill:var(--cds-text-secondary)}
+.tt-chart text.tt-val{fill:var(--color-fg);font-size:12px;font-variant-numeric:tabular-nums}
+.tt-chart text.tt-lab{fill:var(--color-fg);font-size:12px}
+.tt-chart text.tt-in{fill:var(--color-bg);font-size:11px;font-weight:600}
+.tt-legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:var(--cds-font-size-caption);color:var(--cds-text-secondary);margin-bottom:8px}
+.tt-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tt-tip{position:absolute;left:0;top:0;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);box-shadow:var(--cds-shadow-popover);border-radius:6px;padding:4px 8px;font-size:var(--cds-font-size-caption);white-space:nowrap;opacity:0;z-index:2}
+.tt-scroll{overflow-x:auto;margin-top:var(--cds-gap-md)}
+table.tt-t{border-collapse:collapse;width:100%;font-size:var(--cds-font-size-body);font-variant-numeric:tabular-nums}
+.tt-t th,.tt-t td{padding:6px 8px;border-bottom:1px solid var(--color-border-line);text-align:right;vertical-align:top}
+.tt-t th:first-child,.tt-t td:first-child{text-align:left}
+.tt-t.tt-text td,.tt-t.tt-text th{text-align:left}
+.tt-t th{font-weight:var(--cds-font-weight-medium);color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.tt-note{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin:var(--cds-gap-sm) 0 0}
+.tt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tt-chips span{border:1px solid var(--color-border-line);border-radius:999px;padding:3px 10px;font-size:var(--cds-font-size-caption)}
+</style>
+
+<!-- Small stand-in for the Claude dashboard runtime: loads the CSVs in /data and draws the page -->
+<script>
+window.dash = (function () {
+  const files = ['kpis','funnel','attendance','sessions','presenters','strand','feedback','facebook','website',
+    'satisfaction','usefulness','applicability','nps_scores','campus_survey','experience','heard','returning','web_daily',
+    'fb_age','fb_cities','fb_countries','fb_formats','sat_segments','improve_themes',
+    'inst_types_2026','inst_types_2025','inst_all_2026','inst_breadth_2026','inst_campus_2026','inst_compare'];
+  const store = {}, calcs = {}, draws = [];
+  const cs = getComputedStyle(document.documentElement);
+  const colors = [1,2,3,4,5].map(i => 'var(--chart-' + i + ')');
+  function data(id) {
+    if (calcs[id]) {
+      const c = calcs[id];
+      const ins = c.inputs.map(data);
+      if (ins.some(d => d.status !== 'ok')) return { status: 'loading', data: null };
+      return { status: 'ok', data: c.fn(...ins.map(d => d.data)) };
+    }
+    if (!(id in store)) return { status: 'loading', data: [] };
+    if (store[id] === null) return { status: 'error', data: [] };
+    return { status: 'ok', data: store[id] };
+  }
+  function calc(id, def) { calcs[id] = def; }
+  function draw(name, fn) { draws.push([name, fn]); }
+  function render() {
+    draws.forEach(([name, fn]) => document.querySelectorAll('[data-draw="' + name + '"]').forEach(el => {
+      try { fn(el); } catch (e) { console.error(name, e); }
+    }));
+  }
+  function start() {
+    render();
+    Promise.all(files.map(f => d3.csv('data/' + f + '.csv').then(rows => { store[f] = rows; }, () => { store[f] = null; })))
+      .then(render);
+    let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 150); });
+  }
+  return { data, calc, draw, colors, start };
+})();
+</script>
+</head>
+<body>
+<div id="dash-root">
+<div class='tt'>
+<header id='top'><h1>Teacher Talks 2026</h1><p class='tt-sub'>RMIT Vietnam · SEUP · Danang 3 Oct · HCMC 10 Oct · Hanoi 11 Oct</p></header>
+
+<section id='headline' class='tt-tiles'>
+<div class='tt-card'><div class='tt-lbl'>Attendees</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=attendees_2026'>—</span></div><div class='tt-up'>+<span data-draw='v' data-source='kpis' data-field='value' data-where='id=attendees_change' data-fmt='1'>—</span>% vs 2025</div></div>
+<div class='tt-card'><div class='tt-lbl'>Registrations</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=registrations_2026'>—</span></div><div class='tt-up'>+<span data-draw='v' data-source='kpis' data-field='value' data-where='id=registrations_change' data-fmt='1'>—</span>% vs 2025</div></div>
+<div class='tt-card'><div class='tt-lbl'>Show-up rate</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=conversion_2026' data-fmt='1'>—</span>%</div><div class='tt-up'>+<span data-draw='v' data-source='kpis' data-field='value' data-where='id=conversion_change' data-fmt='1'>—</span> pp vs 2025</div></div>
+<div class='tt-card'><div class='tt-lbl'>Workshops</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=sessions_2026'>—</span></div><div class='tt-up'>+<span data-draw='v' data-source='kpis' data-field='value' data-where='id=sessions_change'>—</span>% vs 2025</div></div>
+<div class='tt-card'><div class='tt-lbl'>Satisfaction</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=satisfaction' data-fmt='1'>—</span>%</div><div class='tt-ctx'>national survey</div></div>
+<div class='tt-card'><div class='tt-lbl'>NPS</div><div class='tt-num'>+<span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=nps_2026'>—</span></div><div class='tt-down'>2025: +<span data-draw='v' data-source='kpis' data-field='value' data-where='id=nps_2025'>—</span></div></div>
+</section>
+
+<section id='participation'><h2>Participation</h2>
+<div class='tt-grid2'>
+<div class='tt-card' id='funnel-card'><h3>Registered vs attended</h3><div class='tt-chart dash-skeleton' data-draw='funnel' data-source='funnel' data-labels='Registered,Attended' data-aria='Registrations and attendees, 2025 and 2026'></div>
+<div class='tt-scroll'><table class='tt-t' data-source='funnel' data-row-key='metric'><thead><tr><th data-field='metric'>Metric</th><th data-field='y2025'>2025</th><th data-field='y2026'>2026</th><th data-field='change'>Change</th></tr></thead><tbody data-draw='rows'></tbody></table></div></div>
+<div class='tt-card' id='campus-card'><h3>Attendance by campus</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='attendance' data-cat='campus' data-keys='y2025,y2026' data-labels='2025,2026' data-aria='Attendance by campus, 2025 vs 2026'></div>
+<div class='tt-scroll'><table class='tt-t' data-source='attendance' data-row-key='campus'><thead><tr><th data-field='campus'>Campus</th><th data-field='y2025'>2025</th><th data-field='y2026'>2026</th><th data-field='growth'>Growth</th></tr></thead><tbody data-draw='rows'></tbody></table></div></div>
+<div class='tt-card' id='heard-card'><h3>How registrants heard</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='heard' data-cat='source' data-keys='registrations' data-labels='Registration entries naming source' data-aria='How registrants heard about Teacher Talks'></div><p class='tt-note'>958 form entries incl. waitlist; multi-select.</p></div>
+<div class='tt-card' id='returning-card'><h3>New vs returning</h3><h4>Registrations</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='returning' data-cat='group' data-keys='new,returning,not_sure' data-labels='First time,Returning,Not sure' data-aria='Registrations: first time vs returning'></div><h4>Survey respondents: events attended</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='experience' data-cat='times' data-keys='responses' data-labels='Respondents' data-aria='Survey respondents by number of events attended'></div></div>
+</div>
+<div class='tt-tiles' id='hcmc-demand'>
+<div class='tt-card'><div class='tt-lbl'>HCMC: weeks to full capacity</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=waitlist_weeks_2026'>—</span></div><div class='tt-ctx'>2025: ~<span data-draw='v' data-source='kpis' data-field='value' data-where='id=open_weeks_2025'>—</span> weeks open</div></div>
+<div class='tt-card'><div class='tt-lbl'>HCMC waitlist</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=waitlist_entries'>—</span></div><div class='tt-ctx'>extra entries</div></div>
+</div>
+</section>
+
+<section id='programme'><h2>Programme</h2>
+<div class='tt-grid2'>
+<div class='tt-card' id='sessions-card'><h3>Workshop sessions by campus</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='sessions' data-cat='campus' data-keys='y2025,y2026' data-labels='2025,2026' data-aria='Workshop sessions by campus, 2025 vs 2026'></div><p class='tt-note'>HCMC: full-day format + keynote + panel</p></div>
+<div class='tt-card' id='presenters-card'><h3>Internal vs external presenters</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='presenters' data-cat='group' data-keys='internal,external' data-labels='Internal,External' data-aria='Internal and external presenters by campus and year'></div></div>
+<div class='tt-card' id='strand-card'><h3>ELT vs EMI presenters, 2026</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='strand' data-cat='campus' data-keys='elt,emi' data-labels='ELT,EMI' data-aria='ELT and EMI presenters by campus, 2026'></div><p class='tt-note'>EMI new in 2026. Report total says 21 ELT; campus figures add to 22.</p></div>
+<div class='tt-card' id='external-card'><h3>External presenter share</h3><div class='tt-mini'><div><div class='tt-lbl'>2025</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=external_share_2025'>—</span>%</div></div><div><div class='tt-lbl'>2026</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=external_share_2026'>—</span>%</div></div></div><p class='tt-note'>Visa support enabled external panelists; work permits blocked some international speakers.</p></div>
+</div>
+</section>
+
+<section id='feedback'><h2>Feedback</h2>
+<div class='tt-grid2'>
+<div class='tt-card' id='feedback-card'><h3>Positive answers, % of respondents</h3><p class='tt-note' style='margin:0 0 var(--cds-gap-sm)'>Each bar is a separate question; brackets show which answers count.</p><div class='tt-chart dash-skeleton' data-draw='pbar' data-source='feedback' data-cat='measure' data-key='value' data-aria='Participant feedback results, percent of respondents'></div></div>
+<div class='tt-card' id='survey-card'><div class='tt-mini'><div><div class='tt-lbl'>Responses</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=responses'>—</span></div><div class='tt-ctx'><span data-draw='v' data-source='kpis' data-field='value' data-where='id=response_rate' data-fmt='1'>—</span>% of attendees</div></div><div><div class='tt-lbl'>Want to present</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=present_interest_n'>—</span></div><div class='tt-ctx'>respondents</div></div></div>
+<div class='tt-scroll'><table class='tt-t tt-text'><thead><tr><th>Valued</th><th>Want more of</th></tr></thead><tbody><tr><td>Practical, applicable content</td><td>Consistent session quality</td></tr><tr><td>Presenter expertise</td><td>Hands-on and networking time</td></tr><tr><td>Topic variety</td><td>Better scheduling and room capacity</td></tr><tr><td>Meeting other educators</td><td>Clearer participant comms</td></tr></tbody></table></div></div>
+<div class='tt-card tt-wide' id='likert-card'><h3>Satisfaction by aspect (respondents)</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='satisfaction' data-cat='question' data-keys='very,somewhat,neutral,somewhat_dis,very_dis' data-labels='Very satisfied,Somewhat satisfied,Neutral,Somewhat dissatisfied,Very dissatisfied' data-aria='Satisfaction by aspect, respondent counts'></div>
+<h4>Session usefulness</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='usefulness' data-cat='question' data-keys='very_useful,useful,somewhat,not_useful' data-labels='Very useful,Useful,Somewhat useful,Not useful' data-aria='Session usefulness, respondent counts'></div>
+<h4>Ideas you can apply</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='applicability' data-cat='question' data-keys='quite_a_lot,somewhat,a_little' data-labels='Quite a lot,Somewhat,A little' data-aria='Applicable ideas, respondent counts'></div></div>
+<div class='tt-card tt-wide' id='sat-detail-card'><h3>Satisfied vs very satisfied</h3>
+<div class='tt-mini'><div><div class='tt-lbl'>Satisfied overall (very + somewhat)</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=satisfaction' data-fmt='1'>—</span>%</div></div><div><div class='tt-lbl'>Very satisfied overall</div><div class='tt-num'><span class='dash-skeleton' data-draw='v1' data-source='very_overall'>—</span>%</div></div></div>
+<h4>% giving the top answer, by campus</h4><div class='tt-chart dash-skeleton' data-draw='gbar' data-palette='cat' data-source='sat_pivot' data-cat='aspect' data-keys='HCMC,Hanoi,Danang' data-labels='HCMC,Hanoi,Danang' data-aria='Percent giving the top answer on each question, by campus'></div>
+<h4>% giving the top answer, first-timers vs returning</h4><div class='tt-chart dash-skeleton' data-draw='gbar' data-palette='cat' data-source='sat_pivot' data-cat='aspect' data-keys='First-timers,Returning' data-labels='First-timers,Returning' data-aria='Percent giving the top answer on each question, first-timers vs returning attendees'></div>
+<h4>Detail: % giving the top answer</h4><div class='tt-scroll' style='margin-top:0'><table class='tt-t' data-source='sat_pct' data-row-key='segment' data-heat='1'><thead><tr><th data-field='segment'>Group</th><th data-field='n'>n</th><th data-field='overall'>Overall</th><th data-field='before'>Before</th><th data-field='during'>On the day</th><th data-field='facilities'>Facilities</th><th data-field='useful'>Very useful</th><th data-field='apply'>Applicable</th><th data-field='nps'>NPS</th></tr></thead><tbody data-draw='rows'></tbody></table></div>
+<p class='tt-note'>Top answer: very satisfied / very useful / quite a lot. Shading: darker = higher within column. One Hanoi respondent rated every aspect very dissatisfied but scored 10 to recommend — likely a reversed scale.</p></div>
+<div class='tt-card tt-wide' id='improve-card'><h3>Improvement suggestions by theme (comments)</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='improve_themes' data-cat='theme' data-keys='HCMC,Hanoi,Danang' data-labels='HCMC,Hanoi,Danang' data-aria='Improvement comments by theme and campus'></div><p class='tt-note'>Keyword grouping of open comments; one comment can fit several themes.</p></div>
+<div class='tt-card' id='nps-dist-card'><h3>Recommend score (0–10)</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='nps_scores' data-cat='score' data-keys='responses' data-labels='Respondents' data-aria='Respondents by recommend score, 0 to 10'></div><p class='tt-note'>9–10 promoters · 7–8 passives · 0–6 detractors</p></div>
+<div class='tt-card' id='nps-campus-card'><h3>NPS by campus</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='nps_campus' data-cat='campus' data-keys='nps' data-labels='NPS' data-aria='Net Promoter Score by campus'></div>
+<div class='tt-scroll'><table class='tt-t' data-source='campus_survey' data-row-key='campus'><thead><tr><th data-field='campus'>Campus</th><th data-field='responses'>Responses</th><th data-field='promoters'>Promoters</th><th data-field='passives'>Passives</th><th data-field='detractors'>Detractors</th></tr></thead><tbody data-draw='rows'></tbody></table></div></div>
+</div>
+</section>
+
+<section id='institutions'><h2>Institutions</h2>
+<div class='tt-tiles' style='margin-bottom:var(--cds-gap-md)'>
+<div class='tt-card'><div class='tt-lbl'>Different institutions named</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='inst_breadth_2026' data-field='institutions' data-where='campus=All campuses'>—</span></div><div class='tt-ctx'>2026 registrations</div></div>
+<div class='tt-card'><div class='tt-lbl'>Registrations naming an institution</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='inst_breadth_2026' data-field='named_registrations' data-where='campus=All campuses'>—</span></div><div class='tt-ctx'>excl. waitlist</div></div>
+<div class='tt-card'><div class='tt-lbl'>Independent teachers</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='inst_types_2026' data-field='total' data-where='type=Independent teacher'>—</span></div><div class='tt-ctx'>largest single group</div></div>
+</div>
+<div class='tt-grid2'>
+<div class='tt-card tt-wide' id='inst-type-card'><h3>Registrations by institution type, 2026</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_types_2026' data-cat='type' data-keys='HCMC,Hanoi,Danang' data-labels='HCMC,Hanoi,Danang' data-aria='2026 registrations by institution type and campus'></div><p class='tt-note'>Free-text affiliations, cleaned and grouped; waitlist excluded.</p></div>
+<div class='tt-card' id='inst-mix-card'><h3>Type mix, 2025 vs 2026 (%)</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='inst_share' data-cat='type' data-keys='y2025,y2026' data-labels='2025,2026' data-aria='Share of language centres, higher education and K-12 schools, 2025 vs 2026'></div><p class='tt-note'>Share of these three types only. 2025: survey responses; 2026: registrations. 2025 had no independent-teacher option.</p></div>
+<div class='tt-card' id='inst-breadth-card'><h3>Breadth: different institutions by campus</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_breadth_2026' data-cat='campus' data-rows='HCMC|Hanoi|Danang' data-keys='he,k12,lc,org' data-labels='Higher ed,K-12,Language centres,Other orgs' data-aria='Number of different institutions by campus and type, 2026'></div><p class='tt-note'>Some institutions appear at more than one campus.</p></div>
+<div class='tt-card tt-wide' id='inst-top-card'><h3>Top 15 institutions, 2026 (registrations)</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_all_2026' data-cat='institution' data-keys='registrations' data-labels='Registrations' data-limit='15' data-aria='Top 15 institutions by 2026 registrations'></div>
+<div class='tt-scroll'><table class='tt-t tt-text' data-source='inst_all_2026' data-row-key='institution' data-limit='15'><thead><tr><th data-field='institution'>Institution</th><th data-field='type'>Type</th><th data-field='campuses'>Campuses</th><th data-field='registrations'>Registrations</th></tr></thead><tbody data-draw='rows'></tbody></table></div></div>
+<div class='tt-card tt-wide' id='inst-campus-card'><h3>Top 5 by campus, 2026</h3><div class='tt-grid2' style='margin:0'>
+<div><h4>HCMC</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_campus_2026' data-filter='campus=HCMC' data-limit='5' data-cat='inst' data-keys='registrations' data-labels='Registrations' data-aria='Top 5 institutions at HCMC, 2026 registrations'></div></div>
+<div><h4>Hanoi</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_campus_2026' data-filter='campus=Hanoi' data-limit='5' data-cat='inst' data-keys='registrations' data-labels='Registrations' data-aria='Top 5 institutions at Hanoi, 2026 registrations'></div></div>
+<div><h4>Danang</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='inst_campus_2026' data-filter='campus=Danang' data-limit='5' data-cat='inst' data-keys='registrations' data-labels='Registrations' data-aria='Top 5 institutions at Danang, 2026 registrations'></div></div>
+</div></div>
+<div class='tt-card tt-wide' id='inst-compare-card'><h3>Top institution by campus and type: 2025 vs 2026</h3><div class='tt-scroll' style='margin-top:0'><table class='tt-t' data-source='inst_compare' data-row-key='campus,type'><thead><tr><th data-field='campus'>Campus</th><th data-field='type'>Type</th><th data-field='top_2025'>2025 top</th><th data-field='reg_2025'>2025</th><th data-field='same_2026'>Same, 2026</th><th data-field='top_2026'>2026 top</th><th data-field='reg_2026'>2026</th></tr></thead><tbody data-draw='rows'></tbody></table></div><p class='tt-note'>2025 counts: survey responses (2025 dashboard). 2026 counts: registrations. Compare rankings, not raw numbers.</p></div>
+</div>
+</section>
+
+<section id='reach'><h2>Reach</h2>
+<div class='tt-grid2'>
+<div class='tt-card tt-wide' id='web-daily-card'><h3>Website page views per day, 2026</h3><div class='tt-chart dash-skeleton' style='min-height:200px' data-draw='line' data-source='web_daily' data-keys='views_2026' data-labels='page views' data-events='2026-10-03,2026-10-10,2026-10-11' data-aria='Daily website page views, June to November 2026, peaking on 10 October'></div><p class='tt-note'>Dashed lines: event days.</p></div>
+<div class='tt-card' id='facebook-card'><h3>Facebook · 1 Jun–25 Oct</h3><div class='tt-mini'>
+<div><div class='tt-lbl'>Views</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=Views'>—</span></div></div>
+<div><div class='tt-lbl'>Page visits</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=Page / profile visits'>—</span></div></div>
+<div><div class='tt-lbl'>Followers</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=Total followers'>—</span></div></div>
+<div><div class='tt-lbl'>Interactions</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=Content interactions'>—</span></div></div>
+<div><div class='tt-lbl'>New follows</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=New follows'>—</span></div></div>
+<div><div class='tt-lbl'>Net growth</div><div class='tt-num'>+<span class='dash-skeleton' data-draw='v' data-source='facebook' data-field='value' data-where='measure=Net follower growth'>—</span></div></div>
+</div><div class='tt-chart dash-skeleton' data-draw='pbar' data-source='facebook' data-cat='measure' data-key='value' data-rows='Views from non-followers %' data-aria='Share of Facebook views from non-followers'></div></div>
+<div class='tt-card' id='website-card'><h3>Website · 1 Jun–15 Nov</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-source='website' data-cat='metric' data-keys='y2025,y2026' data-labels='2025,2026' data-rows='Page views|Site sessions|Unique visitors' data-aria='Website page views, sessions and unique visitors, 2025 vs 2026'></div>
+<div class='tt-scroll'><table class='tt-t' data-source='website' data-row-key='metric'><thead><tr><th data-field='metric'>Metric</th><th data-field='y2025'>2025</th><th data-field='y2026'>2026</th><th data-field='change'>Change</th></tr></thead><tbody data-draw='rows'></tbody></table></div>
+<div class='tt-mini' style='margin-top:var(--cds-gap-md)'><div><div class='tt-lbl'>Views in Sep–Oct</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=web_sepoct_share'>—</span>%</div></div><div><div class='tt-lbl'>Peak day (10 Oct)</div><div class='tt-num'><span class='dash-skeleton' data-draw='v' data-source='kpis' data-field='value' data-where='id=web_peak_views'>—</span></div></div></div>
+<p class='tt-note'>Events were in Nov in 2025, Oct in 2026.</p></div>
+<div class='tt-card' id='fb-formats-card'><h3>Facebook by post format</h3><h4>Views</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='fb_formats' data-cat='format' data-keys='views' data-labels='Views' data-aria='Facebook views by post format'></div><h4>Interactions</h4><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='fb_formats' data-cat='format' data-keys='interactions' data-labels='Interactions' data-aria='Facebook interactions by post format'></div></div>
+<div class='tt-card' id='fb-age-card'><h3>Facebook audience: age &amp; gender (%)</h3><div class='tt-chart dash-skeleton' data-draw='gbar' data-palette='cat' data-source='fb_age' data-cat='age' data-keys='women,men' data-labels='Women,Men' data-aria='Facebook audience by age band and gender, percent'></div></div>
+<div class='tt-card' id='fb-cities-card'><h3>Facebook audience: top cities (%)</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='fb_cities' data-cat='city' data-keys='pct' data-labels='% of audience' data-aria='Facebook audience by top city, percent'></div></div>
+<div class='tt-card' id='fb-countries-card'><h3>Facebook audience: top countries (%)</h3><div class='tt-chart dash-skeleton' data-draw='hstack' data-source='fb_countries' data-cat='country' data-keys='pct' data-labels='% of audience' data-aria='Facebook audience by top country, percent'></div></div>
+</div>
+<div class='tt-card' id='channels'><h3>Other channels</h3><div class='tt-chips'><span>CamTESOL</span><span>VietTESOL</span><span>VietTESOL Signature Series</span><span>Pearson teacher training</span><span>Professional networks</span><span>Webinar series (in development)</span></div></div>
+</section>
+
+<section id='next'><h2>2027 priorities</h2>
+<div class='tt-card'><div class='tt-scroll' style='margin-top:0'><table class='tt-t tt-text'><thead><tr><th>Area</th><th>Action</th></tr></thead><tbody>
+<tr><td>Programme</td><td>Keep ELT + EMI; review HCMC full-day format</td></tr>
+<tr><td>Planning</td><td>Keep Specialist roles; clarify campus vs national roles; confirm keynotes and panelists early</td></tr>
+<tr><td>Demand</td><td>Review venue capacity, workshop allocation, waitlist</td></tr>
+<tr><td>Delivery</td><td>Keep presenter run-throughs; improve wayfinding and comms; support Danang staffing</td></tr>
+<tr><td>Reach</td><td>Use online delivery for international speakers</td></tr>
+<tr><td>Year-round</td><td>Launch the webinar series</td></tr>
+</tbody></table></div></div>
+</section>
+</div>
+</div>
+
+<script>
+window.TT=(function(){
+const num=v=>+String(v).replace(/[^0-9.\-]/g,'');
+const fi=d3.format(',');
+const fv=v=>Number.isInteger(v)?fi(v):d3.format(',.1f')(v);
+function state(el,ids){const ds=ids.map(id=>dash.data(id));const bad=ds.find(d=>d.status!=='ok');if(bad){el.replaceChildren();if(bad.status==='loading'){el.classList.add('dash-skeleton');}else{el.classList.remove('dash-skeleton');const p=document.createElement('p');p.className='tt-note';p.textContent='Failed to load';el.append(p);}return null;}el.classList.remove('dash-skeleton');return ds.map(d=>Array.isArray(d.data)?d.data:[]);}
+function tip(el){const t=document.createElement('div');t.className='tt-tip';el.append(t);return{show(ev,s){t.textContent=s;t.style.opacity=1;const r=el.getBoundingClientRect();const w=t.offsetWidth;let x=ev.clientX-r.left+12;if(x+w>r.width)x=Math.max(0,ev.clientX-r.left-w-12);t.style.transform='translate('+x+'px,'+Math.max(0,ev.clientY-r.top-34)+'px)';},hide(){t.style.opacity=0;}};}
+function bind(sel,t,f){sel.style('cursor','default').on('pointermove pointerdown',(ev,d)=>t.show(ev,f(d))).on('pointerleave',()=>t.hide());}
+function legend(el,labels,colors){const lg=document.createElement('div');lg.className='tt-legend';labels.forEach((l,i)=>{const s=document.createElement('span');const sw=document.createElement('i');sw.style.background=colors[i];s.append(sw,l);lg.append(s);});el.append(lg);}
+function svg(el,H){const W=Math.max(220,el.clientWidth||320);const s=d3.select(el).append('svg').attr('width','100%').attr('height',H).attr('viewBox','0 0 '+W+' '+H).attr('role','img').attr('aria-label',el.dataset.aria||'');return[s,W];}
+function pick(el,rows,cat){if(!el.dataset.rows)return rows;const keep=el.dataset.rows.split('|');return rows.filter(r=>keep.includes(r[cat]));}
+function sub(el,rows){if(el.dataset.filter){const f=el.dataset.filter;const i=f.indexOf('=');const k=f.slice(0,i),v=f.slice(i+1);rows=rows.filter(r=>String(r[k])===v);}if(el.dataset.limit)rows=rows.slice(0,+el.dataset.limit);return rows;}
+function gbar(el,rows){const cat=el.dataset.cat,keys=el.dataset.keys.split(','),labels=el.dataset.labels.split(',');rows=pick(el,rows,cat);el.replaceChildren();const colors=keys.map((k,i)=>el.dataset.palette==='cat'?dash.colors[i]:(i===keys.length-1?dash.colors[0]:'var(--cds-chart-muted)'));if(keys.length>1)legend(el,labels,colors);const H=190,mt=18,mb=22;const[s,W]=svg(el,H);const t=tip(el);const x0=d3.scaleBand().domain(rows.map(r=>r[cat])).range([0,W]).paddingInner(0.25).paddingOuter(0.05);const x1=d3.scaleBand().domain(keys).range([0,x0.bandwidth()]).padding(0.08);const y=d3.scaleLinear().domain([0,d3.max(rows,r=>d3.max(keys,k=>num(r[k])))||1]).range([H-mb,mt]);const flat=rows.flatMap(r=>keys.map((k,i)=>({c:r[cat],k,i,v:num(r[k])})));bind(s.selectAll('rect').data(flat).join('rect').attr('x',d=>x0(d.c)+x1(d.k)).attr('width',x1.bandwidth()).attr('y',d=>y(d.v)).attr('height',d=>y(0)-y(d.v)).attr('rx',2).style('fill',d=>colors[d.i]),t,d=>d.c+' · '+labels[d.i]+': '+fv(d.v));if(x1.bandwidth()>=16)s.selectAll('text.tt-val').data(flat).join('text').attr('class','tt-val').attr('x',d=>x0(d.c)+x1(d.k)+x1.bandwidth()/2).attr('y',d=>y(d.v)-4).attr('text-anchor','middle').text(d=>fv(d.v));s.append('line').attr('x1',0).attr('x2',W).attr('y1',y(0)).attr('y2',y(0)).style('stroke','var(--cds-chart-axis)');s.selectAll('text.tt-cat').data(rows).join('text').attr('class','tt-cat').attr('x',r=>x0(r[cat])+x0.bandwidth()/2).attr('y',H-6).attr('text-anchor','middle').text(r=>r[cat]);}
+function hstack(el,rows){const cat=el.dataset.cat,keys=el.dataset.keys.split(','),labels=el.dataset.labels.split(',');rows=sub(el,pick(el,rows,cat));el.replaceChildren();const colors=keys.map((k,i)=>dash.colors[i]);if(keys.length>1)legend(el,labels,colors);const bh=22,gap=10,H=rows.length*(bh+gap);const[s,W]=svg(el,H);const t=tip(el);const lt=s.selectAll('text.tt-cat').data(rows).join('text').attr('class','tt-cat').attr('x',0).attr('y',(r,i)=>i*(bh+gap)+bh/2+4).text(r=>r[cat]);const L=(d3.max(lt.nodes(),n=>n.getComputedTextLength())||70)+10;const tot=r=>d3.sum(keys,k=>num(r[k]));const x=d3.scaleLinear().domain([0,d3.max(rows,tot)||1]).range([L,W-44]);const segs=[];rows.forEach((r,i)=>{let a=0;keys.forEach((k,j)=>{const v=num(r[k]);segs.push({c:r[cat],i,j,a,v});a+=v;});});bind(s.selectAll('rect').data(segs).join('rect').attr('x',d=>x(d.a)).attr('y',d=>d.i*(bh+gap)).attr('width',d=>Math.max(0,x(d.a+d.v)-x(d.a))).attr('height',bh).style('fill',d=>colors[d.j]),t,d=>d.c+' · '+labels[d.j]+': '+fv(d.v));if(keys.length>1)s.selectAll('text.tt-in').data(segs.filter(d=>d.v>0&&x(d.a+d.v)-x(d.a)>22)).join('text').attr('class','tt-in').attr('x',d=>(x(d.a)+x(d.a+d.v))/2).attr('y',d=>d.i*(bh+gap)+bh/2+4).attr('text-anchor','middle').text(d=>fv(d.v));s.selectAll('text.tt-val').data(rows).join('text').attr('class','tt-val').attr('x',r=>x(tot(r))+5).attr('y',(r,i)=>i*(bh+gap)+bh/2+4).text(r=>fv(tot(r)));}
+function pbar(el,rows){const cat=el.dataset.cat,key=el.dataset.key;rows=pick(el,rows,cat);el.replaceChildren();const row=42,H=rows.length*row;const[s,W]=svg(el,H);const t=tip(el);const x=d3.scaleLinear().domain([0,100]).range([0,W]);const name=r=>String(r[cat]).replace(/ %$/,'');const g=s.selectAll('g').data(rows).join('g').attr('transform',(r,i)=>'translate(0,'+i*row+')');g.append('text').attr('class','tt-lab').attr('y',13).text(name);g.append('text').attr('class','tt-val').attr('x',W).attr('y',13).attr('text-anchor','end').text(r=>fv(num(r[key]))+'%');g.append('rect').attr('y',19).attr('width',W).attr('height',12).attr('rx',6).style('fill','var(--cds-chart-grid)');bind(g.append('rect').attr('y',19).attr('width',r=>x(num(r[key]))).attr('height',12).attr('rx',6).style('fill',dash.colors[0]),t,r=>name(r)+': '+fv(num(r[key]))+'%');}
+function funnel(el,rows){const labels=el.dataset.labels.split(',');const reg=rows.find(r=>r.metric==='Registrations'),att=rows.find(r=>r.metric==='Attendees');el.replaceChildren();if(!reg||!att)return;const data=[['2025','y2025'],['2026','y2026']].map(([y,k])=>({y,r:num(reg[k]),a:num(att[k])}));const colors=['var(--cds-chart-muted)',dash.colors[0]];legend(el,labels,colors);const bh=28,gap=14,H=2*(bh+gap);const[s,W]=svg(el,H);const t=tip(el);const L=40;const x=d3.scaleLinear().domain([0,d3.max(data,d=>d.r)]).range([L,W-4]);const yy=i=>i*(bh+gap);s.selectAll('text.tt-cat').data(data).join('text').attr('class','tt-cat').attr('x',0).attr('y',(d,i)=>yy(i)+bh/2+4).text(d=>d.y);bind(s.selectAll('rect.r').data(data).join('rect').attr('class','r').attr('x',L).attr('y',(d,i)=>yy(i)).attr('width',d=>x(d.r)-L).attr('height',bh).attr('rx',2).style('fill',colors[0]),t,d=>d.y+' · '+labels[0]+': '+fi(d.r));bind(s.selectAll('rect.a').data(data).join('rect').attr('class','a').attr('x',L).attr('y',(d,i)=>yy(i)).attr('width',d=>x(d.a)-L).attr('height',bh).attr('rx',2).style('fill',colors[1]),t,d=>d.y+' · '+labels[1]+': '+fi(d.a));s.selectAll('text.tt-in').data(data).join('text').attr('class','tt-in').attr('x',d=>x(d.a)-6).attr('y',(d,i)=>yy(i)+bh/2+4).attr('text-anchor','end').text(d=>fi(d.a));s.selectAll('text.tt-val').data(data).join('text').attr('class','tt-val').attr('x',d=>x(d.r)-6).attr('y',(d,i)=>yy(i)+bh/2+4).attr('text-anchor','end').text(d=>fi(d.r));}
+function line(el,rows){const key=el.dataset.keys,label=el.dataset.labels;el.replaceChildren();const H=200,mt=12,mb=22;const[s,W]=svg(el,H);const t=tip(el);const p=d3.utcParse('%Y-%m-%d');const pts=rows.map(r=>({d:p(String(r.date)),v:num(r[key])})).filter(o=>o.d).sort((a,b)=>a.d-b.d);if(!pts.length)return;const y=d3.scaleLinear().domain([0,d3.max(pts,o=>o.v)||1]).nice().range([H-mb,mt]);const yt=y.ticks(4);const grid=s.append('g');const yl=s.append('g').selectAll('text').data(yt).join('text').attr('y',v=>y(v)+4).text(fi);const ml=(d3.max(yl.nodes(),n=>n.getComputedTextLength())||20)+8;yl.attr('x',ml-8).attr('text-anchor','end');const x=d3.scaleUtc().domain(d3.extent(pts,o=>o.d)).range([ml,W-4]);grid.selectAll('line').data(yt).join('line').attr('x1',ml).attr('x2',W-4).attr('y1',v=>y(v)).attr('y2',v=>y(v)).style('stroke','var(--cds-chart-grid)');const ev=(el.dataset.events||'').split(',').filter(Boolean).map(p);s.append('g').selectAll('line').data(ev).join('line').attr('x1',d=>x(d)).attr('x2',d=>x(d)).attr('y1',mt).attr('y2',H-mb).style('stroke','var(--cds-chart-reference)').style('stroke-dasharray','3 3');s.append('g').selectAll('text').data(x.ticks(d3.utcMonth.every(1))).join('text').attr('x',d=>x(d)).attr('y',H-6).attr('text-anchor','middle').text(d3.utcFormat('%b'));s.append('path').datum(pts).attr('d',d3.line().x(o=>x(o.d)).y(o=>y(o.v))).style('fill','none').style('stroke',dash.colors[0]).style('stroke-width',1.5);const mx=pts.reduce((a,b)=>b.v>a.v?b:a,pts[0]);const fmt=d3.utcFormat('%-d %b');s.append('circle').attr('cx',x(mx.d)).attr('cy',y(mx.v)).attr('r',3).style('fill',dash.colors[0]);s.append('text').attr('class','tt-val').attr('x',x(mx.d)-6).attr('y',y(mx.v)+4).attr('text-anchor','end').text(fi(mx.v)+' · '+fmt(mx.d));const f=s.append('circle').attr('r',4).style('fill',dash.colors[0]).style('opacity',0);const bis=d3.bisector(o=>o.d).center;s.append('rect').attr('x',ml).attr('y',0).attr('width',Math.max(0,W-ml)).attr('height',H).style('fill','transparent').on('pointermove pointerdown',e=>{const[px]=d3.pointer(e);const o=pts[bis(pts,x.invert(px))];f.attr('cx',x(o.d)).attr('cy',y(o.v)).style('opacity',1);t.show(e,fmt(o.d)+': '+fi(o.v)+' '+label);}).on('pointerleave',()=>{f.style('opacity',0);t.hide();});}
+return{num,fi,fv,state,gbar,hstack,pbar,funnel,line};
+})();
+</script>
+<script>
+dash.calc('inst_share',{inputs:['inst_types_2025','inst_types_2026'],fn:(t25,t26)=>{const T=['Language centre','Higher education','K-12 school'];const a=T.map(t=>+((t25.find(r=>r.type===t)||{}).y2025||0));const b=T.map(t=>+((t26.find(r=>r.type===t)||{}).total||0));const sa=a.reduce((x,y)=>x+y,0),sb=b.reduce((x,y)=>x+y,0);return T.map((t,i)=>({type:t,y2025:sa?Math.round(a[i]/sa*100):0,y2026:sb?Math.round(b[i]/sb*100):0}));}});
+dash.calc('nps_campus',{inputs:['campus_survey'],fn:(campus_survey)=>campus_survey.map(r=>({campus:r.campus,nps:Math.round((+r.promoters-+r.detractors)/+r.responses*100)}))});
+dash.calc('very_overall',{inputs:['satisfaction'],fn:(satisfaction)=>{const r=satisfaction.find(x=>x.question==='Overall');if(!r)return null;const n=['very','somewhat','neutral','somewhat_dis','very_dis'].reduce((a,k)=>a+(+r[k]),0);return Math.round(+r.very/n*1000)/10;}});
+dash.calc('sat_pct',{inputs:['sat_segments'],fn:(sat_segments)=>sat_segments.map(r=>{const n=+r.n;const p=k=>Math.round(+r[k]/n*1000)/10;return{segment:r.segment,n,overall:p('overall_very'),before:p('before_very'),during:p('during_very'),facilities:p('facilities_very'),useful:p('useful_very'),apply:p('apply_lot'),nps:Math.round((+r.promoters-+r.detractors)/n*100)};})});
+dash.calc('sat_pivot',{inputs:['sat_pct'],fn:(sat_pct)=>{const rows=Array.isArray(sat_pct)?sat_pct:[];const A=[['overall','Overall'],['before','Before'],['during','On the day'],['facilities','Facilities'],['useful','Very useful'],['apply','Applicable']];return A.map(([k,l])=>{const o={aspect:l};rows.forEach(r=>{o[r.segment]=Math.round(r[k]);});return o;});}});
+dash.draw('v',el=>{const d=dash.data(el.dataset.source);if(d.status!=='ok'){el.textContent='—';el.classList.toggle('dash-skeleton',d.status==='loading');return;}el.classList.remove('dash-skeleton');const w=el.dataset.where||'';const i=w.indexOf('=');const k=w.slice(0,i),val=decodeURIComponent(w.slice(i+1));const r=d.data.find(x=>String(x[k])===val);if(!r){el.textContent='—';return;}const v=TT.num(r[el.dataset.field]);el.textContent=el.dataset.fmt==='1'?d3.format('.1f')(v):TT.fv(v);});
+dash.draw('v1',el=>{const d=dash.data(el.dataset.source);if(d.status!=='ok'||d.data==null){el.textContent='—';el.classList.toggle('dash-skeleton',d.status==='loading');return;}el.classList.remove('dash-skeleton');el.textContent=d3.format('.1f')(+d.data);});
+dash.draw('rows',tb=>{const tbl=tb.closest('table');const d=dash.data(tbl.dataset.source);if(d.status!=='ok'||!Array.isArray(d.data)){tb.replaceChildren();return;}const cols=[...tbl.querySelectorAll('th[data-field]')].map(th=>th.dataset.field);const rowsIn=tbl.dataset.limit?d.data.slice(0,+tbl.dataset.limit):d.data;tb.replaceChildren(...rowsIn.map(r=>{const tr=document.createElement('tr');cols.forEach(c=>{const td=document.createElement('td');td.textContent=r[c]==null?'':String(r[c]);tr.append(td);});return tr;}));if(tbl.dataset.heat){cols.forEach((c,ci)=>{if(c==='segment'||c==='n')return;const vals=d.data.map(r=>+r[c]);const lo=Math.min(...vals),hi=Math.max(...vals);[...tb.rows].forEach((tr,ri)=>{const v=vals[ri];const a=hi>lo?Math.round(6+44*(v-lo)/(hi-lo)):20;tr.cells[ci].style.background='color-mix(in srgb, '+dash.colors[0]+' '+a+'%, transparent)';});});}});
+['gbar','hstack','pbar','funnel','line'].forEach(n=>dash.draw(n,el=>{const r=TT.state(el,[el.dataset.source]);if(r)TT[n](el,r[0]);}));
+dash.start();
+</script>
+</body>
+</html>
